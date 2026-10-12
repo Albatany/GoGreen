@@ -27,23 +27,16 @@ from pathlib import Path
 from typing import Callable, Iterator, List, Optional, Tuple
 from urllib.parse import quote
 
-# ----------------------------------------------------------------------------
-# Settings
-# ----------------------------------------------------------------------------
-MIN_DATE = date(2021, 1, 1)   # earliest date the tool accepts
-WINDOW_START_HOUR = 8         # the commits of one day are spread between
-WINDOW_END_HOUR = 20          # 08:00 and 20:00 (UTC) so the day never shifts
-TZ_SUFFIX = "+0000"           # explicit UTC offset on every timestamp
-BIG_RUN_WARNING = 50_000      # ask for extra confirmation above this total
+MIN_DATE = date(2021, 1, 1)   # earliest date the tool accepts (you can change sync with your account)
+WINDOW_START_HOUR = 8         
+WINDOW_END_HOUR = 20          
+TZ_SUFFIX = "+0000"           
+BIG_RUN_WARNING = 50_000      
 
 if os.name == "nt":
-    os.system("")             # enable ANSI colours in Windows 10+ terminals
+    os.system("")             
 USE_COLOR = sys.stdout.isatty()
 
-
-# ----------------------------------------------------------------------------
-# Small terminal helpers
-# ----------------------------------------------------------------------------
 def paint(text: str, code: str) -> str:
     return f"\033[{code}m{text}\033[0m" if USE_COLOR else text
 
@@ -111,10 +104,6 @@ def confirm(prompt: str, default: bool = False) -> bool:
             return False
         warn("Please answer Y or N.")
 
-
-# ----------------------------------------------------------------------------
-# Input validators
-# ----------------------------------------------------------------------------
 def parse_repo_url(raw: str) -> Tuple[str, str]:
     """Accepts https://github.com/o/r(.git), git@github.com:o/r, or o/r."""
     text = re.sub(r"^(?:https?://(?:[^@/]+@)?|git@)(?:www\.)?github\.com(?:[/:]|$)",
@@ -174,10 +163,6 @@ def ask_date_range(allow_year: bool = False) -> Tuple[date, date]:
             return start, end
         warn("End date must be on or after the start date.")
 
-
-# ----------------------------------------------------------------------------
-# Git wrapper (the token never appears in printed output)
-# ----------------------------------------------------------------------------
 class GitError(RuntimeError):
     pass
 
@@ -195,10 +180,9 @@ class Git:
     def run(self, *args: str, env: Optional[dict] = None,
             check: bool = True) -> subprocess.CompletedProcess:
         full_env = os.environ.copy()
-        full_env["GIT_TERMINAL_PROMPT"] = "0"          # never hang on a prompt
+        full_env["GIT_TERMINAL_PROMPT"] = "0"          
         if env:
             full_env.update(env)
-        # `credential.helper=` stops OS keychains from storing the token.
         proc = subprocess.run(
             ["git", "-c", "credential.helper=", *args],
             cwd=str(self.cwd), env=full_env, text=True,
@@ -212,10 +196,6 @@ class Git:
             raise GitError(f"`git {args[0]}` failed: {detail}")
         return proc
 
-
-# ----------------------------------------------------------------------------
-# Configuration
-# ----------------------------------------------------------------------------
 @dataclass
 class RepoConfig:
     owner: str
@@ -310,10 +290,6 @@ def prepare_repo(cfg: RepoConfig, git: Git) -> None:
     else:
         info(f"origin/{cfg.branch} does not exist yet - it will be created on push.")
 
-
-# ----------------------------------------------------------------------------
-# Distribution planning
-# ----------------------------------------------------------------------------
 @dataclass
 class Plan:
     label: str
@@ -370,7 +346,7 @@ def plan_random(days: List[date], total: int, empty_pct: int) -> List[int]:
 def plan_even(n_days: int, total: int) -> List[int]:
     base, remainder = divmod(total, n_days)
     counts = [base] * n_days
-    for k in range(remainder):                               # spread the leftovers evenly
+    for k in range(remainder):                              
         counts[(k * n_days) // remainder] += 1
     return counts
 
@@ -383,10 +359,6 @@ def day_stamps(day: date, count: int) -> Iterator[str]:
         moment = origin + timedelta(seconds=(i * span) // count)
         yield moment.strftime("%Y-%m-%dT%H:%M:%S") + TZ_SUFFIX
 
-
-# ----------------------------------------------------------------------------
-# Menu options
-# ----------------------------------------------------------------------------
 def option_random() -> Plan:
     banner("RANDOM SCATTERING")
     start, end = ask_date_range(allow_year=True)
@@ -417,10 +389,6 @@ def option_even() -> Plan:
              "spread evenly (some days get +1).")
     return Plan("Even distribution", start, end, plan_even(n_days, total))
 
-
-# ----------------------------------------------------------------------------
-# Review, execution, push
-# ----------------------------------------------------------------------------
 def review(cfg: RepoConfig, plan: Plan) -> bool:
     banner("SUMMARY")
     active = [c for c in plan.counts if c]
@@ -506,10 +474,6 @@ def print_graph_checklist() -> None:
   Updates can take a few minutes. Shading is relative to YOUR busiest day, so a
   uniform block (option 2) makes every day in it the darkest green.""")
 
-
-# ----------------------------------------------------------------------------
-# Entry point
-# ----------------------------------------------------------------------------
 def main_menu() -> str:
     banner("2 | MAIN MENU")
     print("  [1] Random Scattering          - N commits spread organically (year / range)")
