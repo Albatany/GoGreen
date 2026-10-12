@@ -1,6 +1,6 @@
 ## GoGreen 👀
 
-This is kinda like a generator for github contribution. 
+This is kinda like a generator for github contribution, Requires the latest python version to run this program.  
 
 ```
 python git_backdate.py
